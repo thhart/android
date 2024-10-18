@@ -79,8 +79,7 @@ import org.jetbrains.android.util.AndroidBundle
 import org.jetbrains.annotations.SystemIndependent
 import org.jetbrains.annotations.VisibleForTesting
 import org.jetbrains.plugins.gradle.service.GradleInstallationManager
-import org.jetbrains.plugins.gradle.service.project.GradleOperationHelperExtension
-import org.jetbrains.plugins.gradle.service.project.ProjectResolverContext
+import org.jetbrains.plugins.gradle.service.project.GradleExecutionHelperExtension
 import org.jetbrains.plugins.gradle.settings.GradleExecutionSettings
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
@@ -631,15 +630,16 @@ class GradleSyncStateHolder constructor(private val project: Project) {
     }
   }
 
-  class BuildPhaseListenerOperationHelperExtension : GradleOperationHelperExtension {
+  class BuildPhaseListenerExecutionHelperExtension : GradleExecutionHelperExtension {
 
-    override fun prepareForExecution(id: ExternalSystemTaskId,
-                                     operation: LongRunningOperation,
-                                     gradleExecutionSettings: GradleExecutionSettings,
-                                     buildEnvironment: BuildEnvironment?) = Unit
-
-    override fun prepareForSync(operation: LongRunningOperation, resolverCtx: ProjectResolverContext) {
-      val project = resolverCtx.externalSystemTaskId.findProject() ?: return
+    override fun prepareForExecution(
+      id: ExternalSystemTaskId,
+      operation: LongRunningOperation,
+      settings: GradleExecutionSettings,
+      buildEnvironment: BuildEnvironment?,
+    ) {
+      if (id.type != ExternalSystemTaskType.RESOLVE_PROJECT) return
+      val project = id.findProject() ?: return
 
       operation.addProgressListener(ProgressListener {
         if (project.isDisposed) return@ProgressListener
